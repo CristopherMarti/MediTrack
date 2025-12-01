@@ -84,3 +84,177 @@ CREATE TABLE Notificacion (
     FOREIGN KEY (Med_ID) REFERENCES Medico(Med_ID)
 );
 GO
+
+
+INSERT INTO Administrador VALUES
+('ADM001', 'Luis Fernández', 'luisf', 'admin123'),
+('ADM002', 'María Torres', 'mariatorres', 'securepass'),
+('ADM003', 'Carlos Ramírez', 'carlosr', 'pass2024'),
+('ADM004', 'Andrea Gómez', 'andreag', 'admin456');
+INSERT INTO Medico VALUES
+('MED001', 'Dr. Juan Pérez', 'Cardiología', 'jperez', 'med123'),
+('MED002', 'Dra. Sofía Ruiz', 'Pediatría', 'sruiz', 'pedi2024'),
+('MED003', 'Dr. Miguel Castro', 'Dermatología', 'mcastro', 'derma456'),
+('MED004', 'Dra. Ana Morales', 'Neurología', 'amorales', 'neuro789');
+INSERT INTO Paciente VALUES
+('PAC001', 'José Martínez', 'Masculino', 'jmartinez', 'jos123', 35, '987654321'),
+('PAC002', 'Lucía Rivera', 'Femenino', 'lrivera', 'luc456', 28, '987111222'),
+('PAC003', 'Pedro Gómez', 'Masculino', 'pgomez', 'ped789', 42, '999555444'),
+('PAC004', 'Ana Torres', 'Femenino', 'atorres', 'ana888', 31, '966333111');
+INSERT INTO Tratamiento VALUES
+('T001', 'Tratamiento Cardiaco', 'Control presión arterial', '2025-01-10', '2025-03-10', 'MED001'),
+('T002', 'Tratamiento Pediátrico', 'Fiebre persistente', '2025-02-05', NULL, 'MED002'),
+('T003', 'Tratamiento Dermatológico', 'Dermatitis crónica', '2025-01-20', '2025-04-20', 'MED003'),
+('T004', 'Tratamiento Neurológico', 'Migrañas severas', '2025-03-01', NULL, 'MED004');
+INSERT INTO Medicamento VALUES
+('M001', 'Aspirina', '500mg', 'Cada 8 horas', 'Dolor estomacal', 'T001'),
+('M002', 'Ibuprofeno', '200mg', 'Cada 12 horas', 'Somnolencia', 'T002'),
+('M003', 'Clotrimazol', '1%', 'Dos veces al día', 'Irritación leve', 'T003'),
+('M004', 'Sumatriptán', '50mg', 'Según necesidad', 'Mareos', 'T004');
+INSERT INTO HistorialPaciente VALUES
+('H001', '2025-01-15', 'Control inicial cardiaco', 'Consulta', 'archivo1.pdf', 'PAC001', 'T001'),
+('H002', '2025-02-07', 'Control pediátrico', 'Consulta', 'archivo2.pdf', 'PAC002', 'T002'),
+('H003', '2025-01-25', 'Tratamiento dermatitis', 'Consulta', 'archivo3.pdf', 'PAC003', 'T003'),
+('H004', '2025-03-03', 'Evaluación neurológica', 'Estudio', 'archivo4.pdf', 'PAC004', 'T004');
+INSERT INTO Reporte VALUES
+('R001', 'Presión arterial estable', 'Médico', '2025-01-20', 'MED001', 'PAC001'),
+('R002', 'Mejoría de síntomas', 'Pediátrico', '2025-02-10', 'MED002', 'PAC002'),
+('R003', 'Dermatitis en retroceso', 'Clínico', '2025-01-28', 'MED003', 'PAC003'),
+('R004', 'Reducción de migrañas', 'Neurológico', '2025-03-05', 'MED004', 'PAC004');
+INSERT INTO Notificacion VALUES
+('N001', 'Recordatorio de cita', '2025-01-18', 'Pendiente', 'PAC001', 'MED001'),
+('N002', 'Nueva indicación médica', '2025-02-08', 'Leído', 'PAC002', 'MED002'),
+('N003', 'Seguimiento dermatológico', '2025-01-30', 'Pendiente', 'PAC003', 'MED003'),
+('N004', 'Control de migrañas', '2025-03-06', 'Pendiente', 'PAC004', 'MED004');
+
+--Procedimientos almacenados
+-- 1- Actualizar datos completos de paciente
+CREATE PROCEDURE sp_ActualizarPaciente
+    @ID_Paciente      VARCHAR(20),
+    @Nombre           VARCHAR(80),
+    @Genero           VARCHAR(20),
+    @Usuario          VARCHAR(50),
+    @Contrasena       VARCHAR(100),
+    @Edad             INT,
+    @Contacto         VARCHAR(80)
+AS
+BEGIN
+    UPDATE Paciente
+    SET 
+        Paci_Nombre      = @Nombre,
+        Paci_Genero      = @Genero,
+        Paci_Usuario     = @Usuario,
+        Paci_Contrasena  = @Contrasena,
+        Paci_Edad        = @Edad,
+        Paci_Contacto    = @Contacto
+    WHERE ID_Paciente = @ID_Paciente;
+    PRINT 'Paciente actualizado correctamente.';
+END;
+GO
+
+EXECUTE sp_ActualizarPaciente
+    @ID_Paciente = 'PAC001',
+    @Nombre = 'Carlos Mendoza',
+    @Genero = 'Masculino',
+    @Usuario = 'carlosm',
+    @Contrasena = 'nuevaClave123',
+    @Edad = 32,
+    @Contacto = '987654321';
+
+-- Vista 1: Tratamientos activos (aún en curso)
+CREATE VIEW Vista_Tratamientos_Activos AS
+SELECT T.Trat_ID,T.Trat_Nombre,T.Trat_Descripcion,T.Trat_FechaInicio,T.Trat_FechaFin,M.Med_Nombre 
+AS Medico_Encargado
+FROM Tratamiento T
+INNER JOIN Medico M ON T.Med_ID = M.Med_ID
+WHERE T.Trat_FechaFin IS NULL;   -- Tratamiento activo
+
+-- Probar la vista
+SELECT * FROM Vista_Tratamientos_Activos;
+
+CREATE VIEW Vista_Tratamientos_Finalizados AS
+SELECT 
+    t.Trat_ID,
+    t.Trat_Nombre,
+    t.Trat_Descripcion,
+    t.Trat_FechaInicio,
+    t.Trat_FechaFin,
+    m.Med_Nombre AS Medico_Encargado
+FROM Tratamiento t
+INNER JOIN Medico m ON t.Med_ID = m.Med_ID
+WHERE t.Trat_FechaFin IS NOT NULL;
+
+SELECT * FROM Vista_Tratamientos_Finalizados;
+
+CREATE TRIGGER trg_ValidarEdadPaciente
+ON Paciente
+FOR INSERT
+AS
+BEGIN
+    -- Verificar si la edad es inválida
+    IF EXISTS (
+        SELECT 1
+        FROM inserted
+        WHERE Paci_Edad < 0 OR Paci_Edad > 120
+    )
+    BEGIN
+        RAISERROR ('La edad del paciente no es válida (debe estar entre 0 y 120 años).', 16, 1);
+        ROLLBACK TRANSACTION;
+        RETURN;
+    END;
+
+    PRINT 'Paciente insertado correctamente.';
+END;
+GO
+
+INSERT INTO Paciente (ID_Paciente, Paci_Nombre, Paci_Genero, Paci_Usuario, Paci_Contrasena, Paci_Edad, Paci_Contacto)
+VALUES ('P011', 'Daniel Vega', 'Masculino', 'cvega', '126', 30, '959999999');
+
+INSERT INTO Paciente (ID_Paciente, Paci_Nombre, Paci_Genero, Paci_Usuario, Paci_Contrasena, Paci_Edad, Paci_Contacto)
+VALUES ('P011', 'Daniel', 'Masculino', 'err', '111', -5, '900000000');
+
+CREATE TRIGGER TR_ValidarNombrePaciente
+ON Paciente
+FOR INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM inserted
+        WHERE Paci_Nombre LIKE '%[^A-Za-z ]%'
+    )
+    BEGIN
+        RAISERROR('El nombre solo puede contener letras y espacios.', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END;
+GO
+
+INSERT INTO Paciente (ID_Paciente, Paci_Nombre, Paci_Genero, Paci_Usuario, Paci_Contrasena, Paci_Edad, Paci_Contacto)
+VALUES ('P100', 'Juan Perez', 'Masculino', 'juanp', 'clave123', 30, '999999999');
+
+INSERT INTO Paciente (ID_Paciente, Paci_Nombre, Paci_Genero, Paci_Usuario, Paci_Contrasena, Paci_Edad, Paci_Contacto)
+VALUES ('P104', 'Maria@', 'Femenino', 'maria', 'hola1234', 28, '955555555');
+
+CREATE TRIGGER TR_ValidarContrasenaPaciente
+ON Paciente
+FOR INSERT, UPDATE
+AS
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM inserted
+        WHERE LEN(Paci_Contrasena) < 6
+    )
+    BEGIN
+        RAISERROR('La contraseña debe tener al menos 6 caracteres.', 16, 1);
+        ROLLBACK TRANSACTION;
+    END
+END;
+GO
+
+INSERT INTO Paciente (ID_Paciente, Paci_Nombre, Paci_Genero, Paci_Usuario, Paci_Contrasena, Paci_Edad, Paci_Contacto)
+VALUES ('P013', 'Carlos Diaz', 'Masculino', 'carlosd', 'seguro123', 28, '955555555');
+
+INSERT INTO Paciente (ID_Paciente, Paci_Nombre, Paci_Genero, Paci_Usuario, Paci_Contrasena, Paci_Edad, Paci_Contacto)
+VALUES ('P014', 'Luis Torres', 'Masculino', 'luisito', '123', 20, '977777777');
